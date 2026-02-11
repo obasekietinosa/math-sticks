@@ -9,13 +9,11 @@ interface DigitProps {
 const Digit: React.FC<DigitProps> = ({ segments, onClick, disabled }) => {
   // Segments: 0:a, 1:b, 2:c, 3:d, 4:e, 5:f, 6:g
 
-  const getSegmentClass = (active: boolean, isVertical: boolean) => {
+  const getSegmentClass = (active: boolean) => {
     const base = "absolute transition-colors duration-200 cursor-pointer rounded-sm";
     const color = active
       ? "bg-orange-500 hover:bg-orange-400"
       : "bg-gray-200 hover:bg-gray-300";
-    // const size = isVertical ? "w-2 h-16" : "h-2 w-16";
-    // return `${base} ${color} ${size}`;
     return `${base} ${color}`;
   };
 
@@ -39,7 +37,7 @@ const Digit: React.FC<DigitProps> = ({ segments, onClick, disabled }) => {
       {positions.map((pos, idx) => (
         <div
           key={idx}
-          className={`${getSegmentClass(segments[idx], pos.vertical)} ${pos.class}`}
+          className={`${getSegmentClass(segments[idx])} ${pos.class}`}
           style={getSizeStyle(pos.vertical)}
           onClick={() => !disabled && onClick(idx)}
           data-testid={`segment-${idx}-${segments[idx] ? 'on' : 'off'}`}
