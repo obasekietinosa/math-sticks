@@ -1,5 +1,7 @@
-export const SHARED_CONSTANT = 'Shared logic initialized';
+export * from './constants.js';
+export * from './utils.js';
 
+export const SHARED_CONSTANT = 'Shared logic initialized';
 export function getSharedMessage(): string {
   return `Message from shared: ${SHARED_CONSTANT}`;
 }
