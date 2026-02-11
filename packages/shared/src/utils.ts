@@ -1,7 +1,7 @@
 import { DIGITS } from './constants.js';
 
 export function getSegments(num: number): boolean[][] {
-  const digits = num.toString().split('').map(Number);
+  const digits = num.toString().padStart(3, '0').split('').map(Number);
   return digits.map(d => [...DIGITS[d]]);
 }
 
@@ -45,5 +45,5 @@ export function calculateMoves(source: boolean[][], target: boolean[][]): number
 }
 
 export function generateRandomNumber(): number {
-  return Math.floor(Math.random() * 900) + 100;
+  return Math.floor(Math.random() * 999) + 1;
 }
