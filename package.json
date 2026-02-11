@@ -1,0 +1,23 @@
+{
+  "name": "math-sticks",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "dev:web": "npm run dev -w @math-sticks/web",
+    "dev:api": "npm run dev -w @math-sticks/api",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0"
+  }
+}
