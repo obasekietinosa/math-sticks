@@ -13,6 +13,10 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "noEmit": false
+    "noEmit": false,
+    "baseUrl": ".",
+    "paths": {
+      "@math-sticks/shared": ["packages/shared/src/index.ts"]
+    }
   }
 }
