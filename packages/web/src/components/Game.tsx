@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Digit from './Digit';
+import { Toast } from './Toast';
+import { GameOverModal } from './GameOverModal';
 import {
   generateRandomNumber,
   getSegments,
@@ -22,7 +24,11 @@ const Game: React.FC = () => {
   const [startSegments, setStartSegments] = useState<boolean[][]>([]);
   const [currentSegments, setCurrentSegments] = useState<boolean[][]>([]);
   const [hand, setHand] = useState<number>(0);
-  const [message, setMessage] = useState<string>('Welcome!');
+
+  // Feedback State
+  const [message, setMessage] = useState<string>('');
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const [boardStatus, setBoardStatus] = useState<'neutral' | 'success' | 'error'>('neutral');
 
   const startRound = (num: number) => {
     const segs = getSegments(num);
@@ -40,6 +46,8 @@ const Game: React.FC = () => {
     setGameOver(false);
     setHistory([num]); // Add initial number to history
     setMessage(`Start number: ${num}. Good luck!`);
+    setMessageType('info');
+    setBoardStatus('neutral');
     startRound(num);
   };
 
@@ -48,12 +56,13 @@ const Game: React.FC = () => {
   }, []);
 
   // Timer
+  const isProcessing = boardStatus !== 'neutral';
+
   useEffect(() => {
-    if (gameOver) return;
+    if (gameOver || isProcessing) return;
 
     if (timeLeft <= 0) {
       setGameOver(true);
-      setMessage("Time's up! Game Over.");
       return;
     }
 
@@ -62,10 +71,10 @@ const Game: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, gameOver]);
+  }, [timeLeft, gameOver, isProcessing]);
 
   const handleSegmentClick = (digitIndex: number, segmentIndex: number) => {
-    if (gameOver) return;
+    if (gameOver || isProcessing) return;
 
     const isActive = currentSegments[digitIndex][segmentIndex];
     const newSegments = currentSegments.map(d => [...d]);
@@ -83,21 +92,35 @@ const Game: React.FC = () => {
         setCurrentSegments(newSegments);
       } else {
         setMessage("No sticks in hand!");
+        setMessageType('error');
+        setTimeout(() => setMessage(''), 2000);
       }
     }
   };
 
   const submitRound = () => {
-    if (gameOver) return;
+    if (gameOver || isProcessing) return;
 
     if (hand !== 0) {
       setMessage("You must use all sticks!");
+      setMessageType('error');
+      setBoardStatus('error');
+      setTimeout(() => {
+          setBoardStatus('neutral');
+          setMessage('');
+      }, 1500);
       return;
     }
 
     const num = isValidNumber(currentSegments);
     if (num === -1) {
       setMessage("Not a valid number!");
+      setMessageType('error');
+      setBoardStatus('error');
+      setTimeout(() => {
+          setBoardStatus('neutral');
+          setMessage('');
+      }, 1500);
       return;
     }
 
@@ -105,34 +128,66 @@ const Game: React.FC = () => {
     const moves = calculateMoves(startSegments, currentSegments);
     if (moves > 3) {
       setMessage(`Too many moves! Used ${moves}, max 3.`);
+      setMessageType('error');
+      setBoardStatus('error');
+      setTimeout(() => {
+          setBoardStatus('neutral');
+          setMessage('');
+      }, 1500);
       return;
     }
 
     // Check history
     if (history.includes(num)) {
        setMessage(`Number ${num} has already been seen!`);
+       setMessageType('error');
+       setBoardStatus('error');
+       setTimeout(() => {
+           setBoardStatus('neutral');
+           setMessage('');
+       }, 1500);
        return;
     }
 
     // Success
-    const newScore = score + num;
-    setScore(newScore);
-    setHistory(prev => [...prev, num]);
-    setRound(r => r + 1);
-    setMessage(`Round ${round} won! Found ${num}. +${num} points.`);
-    startRound(num);
+    setMessage(`Correct! Found ${num}. +${num} points.`);
+    setMessageType('success');
+    setBoardStatus('success');
+
+    setTimeout(() => {
+        const newScore = score + num;
+        setScore(newScore);
+        setHistory(prev => [...prev, num]);
+        setRound(r => r + 1);
+        startRound(num);
+        setBoardStatus('neutral');
+        setMessage('');
+    }, 1500);
   };
 
   const resetConfig = () => {
+      if (gameOver || isProcessing) return;
       setCurrentSegments(startSegments.map(d => [...d]));
       setHand(0);
       setMessage("Reset to current start number.");
+      setMessageType('info');
+      setTimeout(() => setMessage(''), 2000);
   };
 
   const currentMoveCount = calculateMoves(startSegments, currentSegments);
 
+  const getBoardClass = () => {
+      if (gameOver) return 'opacity-50 pointer-events-none';
+      if (boardStatus === 'success') return 'bg-green-100 ring-4 ring-green-500 transition-colors duration-300';
+      if (boardStatus === 'error') return 'bg-red-100 ring-4 ring-red-500 transition-colors duration-300';
+      return 'bg-white transition-colors duration-300';
+  };
+
   return (
-    <div className="flex flex-col items-center p-8 bg-gray-50 min-h-screen">
+    <div className="flex flex-col items-center p-8 bg-gray-50 min-h-screen relative">
+      <Toast message={message} type={messageType} />
+      {gameOver && <GameOverModal score={score} roundsWon={round - 1} onRestart={initGame} />}
+
       <h1 className="text-4xl font-bold mb-4 text-gray-800">Math Sticks</h1>
 
       {/* Stats Bar */}
@@ -153,49 +208,33 @@ const Game: React.FC = () => {
       </div>
 
       {/* Board */}
-      <div className={`flex justify-center mb-8 gap-4 bg-white p-6 rounded-xl shadow-lg ${gameOver ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`flex justify-center mb-8 gap-4 p-6 rounded-xl shadow-lg transition-all ${getBoardClass()}`}>
         {currentSegments.map((segs, idx) => (
           <Digit
             key={idx}
             segments={segs}
             onClick={(sIdx) => handleSegmentClick(idx, sIdx)}
-            disabled={gameOver}
+            disabled={gameOver || isProcessing}
           />
         ))}
       </div>
 
       {/* Controls */}
-      {!gameOver ? (
-        <div className="flex gap-4 mb-8">
+      <div className="flex gap-4 mb-8">
             <button
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50"
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={submitRound}
-            disabled={hand > 0}
+            disabled={hand > 0 || gameOver || isProcessing}
             >
             Submit
             </button>
             <button
-            className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 font-semibold transition-colors"
+            className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={resetConfig}
+            disabled={gameOver || isProcessing}
             >
-            Reset Config
+            Reset
             </button>
-        </div>
-      ) : (
-          <div className="flex flex-col items-center mb-8">
-              <div className="text-2xl font-bold text-red-600 mb-4">GAME OVER</div>
-              <div className="text-xl mb-4">Final Score: {score}</div>
-              <button
-                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold transition-colors"
-                onClick={initGame}
-            >
-                Play Again
-            </button>
-          </div>
-      )}
-
-      <div className="text-xl font-bold text-center mb-4 min-h-[2rem]">
-        {message}
       </div>
 
       <div className="mt-4 text-sm text-gray-500">
