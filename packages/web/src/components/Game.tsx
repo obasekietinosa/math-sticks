@@ -109,28 +109,43 @@ const Game: React.FC = () => {
 
     const isActive = currentSegments[digitIndex][segmentIndex];
     const newSegments = currentSegments.map(d => [...d]);
+    let newHand = hand;
 
     if (isActive) {
       // Remove stick -> add to hand
       newSegments[digitIndex][segmentIndex] = false;
-      setHand(h => h + 1);
-      setCurrentSegments(newSegments);
-      if (isTutorialActive && tutorialStep === 1) {
-        setTutorialStep(2);
-      }
+      newHand += 1;
     } else {
       // Add stick -> remove from hand
       if (hand > 0) {
         newSegments[digitIndex][segmentIndex] = true;
-        setHand(h => h - 1);
-        setCurrentSegments(newSegments);
-        if (isTutorialActive && tutorialStep === 2) {
-            setTutorialStep(3);
-        }
+        newHand -= 1;
       } else {
         setMessage("No sticks in hand!");
         setMessageType('error');
         setTimeout(() => setMessage(''), 2000);
+        return;
+      }
+    }
+
+    const newMoves = calculateMoves(startSegments, newSegments);
+    if (newMoves > 3) {
+      setMessage("Maximum 3 moves allowed!");
+      setMessageType('error');
+      setTimeout(() => setMessage(''), 1500);
+      return;
+    }
+
+    setHand(newHand);
+    setCurrentSegments(newSegments);
+
+    if (isActive) {
+      if (isTutorialActive && tutorialStep === 1) {
+        setTutorialStep(2);
+      }
+    } else {
+      if (isTutorialActive && tutorialStep === 2) {
+          setTutorialStep(3);
       }
     }
   };
@@ -321,7 +336,7 @@ const Game: React.FC = () => {
       </div>
 
       <div className={`mt-4 text-sm ${currentMoveCount > 3 ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
-        Moves used: {currentMoveCount} / 3
+        Moves used: {Math.floor(currentMoveCount)} / 3
         {currentMoveCount > 3 && <span className="ml-2">(Reset needed)</span>}
       </div>
 
