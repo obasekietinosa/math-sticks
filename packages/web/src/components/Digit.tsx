@@ -11,40 +11,153 @@ const Digit: React.FC<DigitProps> = ({ segments, onClick, disabled, highlightedS
   // Segments: 0:a, 1:b, 2:c, 3:d, 4:e, 5:f, 6:g
 
   const getSegmentClass = (active: boolean, isHighlighted: boolean) => {
-    const base = "absolute transition-colors duration-200 cursor-pointer rounded-sm";
-    let color = active
-      ? "bg-orange-500 hover:bg-orange-400"
-      : "bg-gray-200 hover:bg-gray-300";
+    // Base classes
+    let base = "absolute transition-all duration-100 ease-out cursor-pointer backdrop-blur-sm";
 
+    // Color logic
+    let color = "";
+
+    if (active) {
+      color = "bg-fg-primary shadow-sm opacity-90"; // Active: Dark ink
+    } else {
+      // Inactive: Very subtle ghost, barely visible to reduce clutter
+      color = "bg-fg-secondary/5";
+    }
+
+    // Interaction states
     if (isHighlighted) {
-      color += " ring-4 ring-yellow-400 animate-pulse z-10";
+      // Tutorial highlight
+      color = "bg-accent-pop animate-pulse z-30 shadow-lg scale-110";
+    } else if (active) {
+       // Lift effect on hover if active
+       if (!disabled) {
+         color += " hover:scale-105 hover:shadow-md hover:z-20 hover:bg-fg-primary";
+       }
+    } else {
+       // Hover on inactive
+       if (!disabled) {
+         color += " hover:bg-fg-secondary/20 hover:z-10";
+       }
     }
 
     return `${base} ${color}`;
   };
 
-  const getSizeStyle = (isVertical: boolean) => ({
-    width: isVertical ? '0.5rem' : '4rem',
-    height: isVertical ? '4rem' : '0.5rem',
-  });
+  // Dimensions
+  const thicknessVal = 0.6; // rem
+  const lengthVal = 2.8;    // rem
+  // The point depth determines how "pointy" the hexagon is.
+  // For a clean join, it should be about half the thickness.
+  const pointDepthVal = thicknessVal / 2;
+
+  const getSegmentStyle = (isVertical: boolean) => {
+     const thickness = `${thicknessVal}rem`;
+     const length = `${lengthVal}rem`;
+     const pointDepth = `${pointDepthVal}rem`;
+
+     // Hexagon points - create a sharp, techy feel
+     // Horizontal: Points are at Left/Right
+     const clipPathH = `polygon(${pointDepth} 0, calc(100% - ${pointDepth}) 0, 100% 50%, calc(100% - ${pointDepth}) 100%, ${pointDepth} 100%, 0 50%)`;
+
+     // Vertical: Points are at Top/Bottom
+     const clipPathV = `polygon(50% 0, 100% ${pointDepth}, 100% calc(100% - ${pointDepth}), 50% 100%, 0 calc(100% - ${pointDepth}), 0 ${pointDepth})`;
+
+     const style: React.CSSProperties = {
+         clipPath: isVertical ? clipPathV : clipPathH,
+         width: isVertical ? thickness : length,
+         height: isVertical ? length : thickness,
+     };
+
+     return style;
+  };
+
+  // Positioning
+  // We calculate positions to ensure the tips of the hexagons meet with a tiny gap.
+  //
+  // Layout Strategy:
+  // Horizontal segments (A, G, D) are centered horizontally.
+  // Vertical segments (F, B, E, C) are placed at the edges.
+  //
+  // Vertical segments need to be pushed down/up so their points tuck into the horizontal ones.
+  // But since they are hexagons, they just need to neighbor closely.
+
+  // To Center Horizontally: left: (ContainerWidth - SegmentLength) / 2
+  // But we use relative offsets.
+
+  // Let's assume a grid.
+  // Col 1: Vertical Left (F, E)
+  // Col 2: Horizontal (A, G, D) - but actually they span the width
+  // Col 3: Vertical Right (B, C)
+
+  // A (Top): Top 0, Left equivalent to thickness/2 (to account for vertical width?)
+  // Actually, standard 7-segment:
+  // A is top centered.
+  // F is top-left.
+
+  // Let's use CSS calc for precision.
+  const halfThick = `${thicknessVal / 2}rem`;
+  const segLen = `${lengthVal}rem`;
+
+  // Positions
+  // 0 (A): Top
+  // 1 (B): Top Right
+  // 2 (C): Bottom Right
+  // 3 (D): Bottom
+  // 4 (E): Bottom Left
+  // 5 (F): Top Left
+  // 6 (G): Middle
 
   const positions = [
-    { id: 0, class: 'top-0 left-2 right-2', vertical: false }, // a
-    { id: 1, class: 'top-2 right-0', vertical: true },        // b
-    { id: 2, class: 'bottom-2 right-0', vertical: true },     // c
-    { id: 3, class: 'bottom-0 left-2 right-2', vertical: false }, // d
-    { id: 4, class: 'bottom-2 left-0', vertical: true },      // e
-    { id: 5, class: 'top-2 left-0', vertical: true },         // f
-    { id: 6, class: 'top-1/2 -mt-1 left-2 right-2', vertical: false }, // g
+    // A: Top, Centered horizontally between the verticals
+    // Left needs to be shifted by thicknessVal/2 roughly?
+    // Let's just use absolute centering for horizontals and side anchoring for verticals.
+
+    { id: 0, style: { top: '0', left: halfThick, width: segLen } , vertical: false },
+
+    { id: 1, style: { top: halfThick, right: '0', height: segLen }, vertical: true },
+
+    { id: 2, style: { bottom: halfThick, right: '0', height: segLen }, vertical: true },
+
+    { id: 3, style: { bottom: '0', left: halfThick, width: segLen }, vertical: false },
+
+    { id: 4, style: { bottom: halfThick, left: '0', height: segLen }, vertical: true },
+
+    { id: 5, style: { top: halfThick, left: '0', height: segLen }, vertical: true },
+
+    // G: Middle.
+    // Top should be: top offset + length/2? No.
+    // It should be exactly in the center of the container height.
+    { id: 6, style: { top: `calc(50% - ${halfThick})`, left: halfThick, width: segLen }, vertical: false },
   ];
 
+  // Calculate Container Size
+  // Width = Length (Horizontal) + Thickness (Vertical)?
+  // No, usually Horizontal fits *between* verticals or overlaps.
+  // If we overlap: Width = Length.
+  // If Vertical sits on side: Width = Length + Thickness.
+  // Based on positions above:
+  // F is at left 0. Width is Thickness.
+  // A is at left HalfThick. Width is Length.
+  // B is at Right 0.
+  // So Total Width = Length + Thickness (approx).
+  // Let's set a fixed container size based on these vals.
+
+  // Total Width ≈ 2.8 + 0.6 = 3.4rem
+  // Total Height ≈ 2.8 + 2.8 + 0.6 = 6.2rem (approx)
+
   return (
-    <div className="relative w-20 h-40 m-2 select-none bg-gray-50 border border-gray-100">
+    <div
+      className="relative m-2 select-none transform transition-transform duration-200"
+      style={{ width: '3.6rem', height: '6.4rem' }}
+    >
       {positions.map((pos, idx) => (
         <div
           key={idx}
-          className={`${getSegmentClass(segments[idx], idx === highlightedSegment)} ${pos.class}`}
-          style={getSizeStyle(pos.vertical)}
+          className={`${getSegmentClass(segments[idx], idx === highlightedSegment)}`}
+          style={{
+            ...getSegmentStyle(pos.vertical),
+            ...pos.style, // Apply position overrides
+          }}
           onClick={() => !disabled && onClick(idx)}
           data-testid={`segment-${idx}-${segments[idx] ? 'on' : 'off'}`}
         />

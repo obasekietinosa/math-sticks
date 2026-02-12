@@ -291,10 +291,10 @@ const Game: React.FC = () => {
   const currentMoveCount = calculateMoves(startSegments, currentSegments);
 
   const getBoardClass = () => {
-      if (gameOver) return 'opacity-50 pointer-events-none';
-      if (boardStatus === 'success') return 'bg-green-100 ring-4 ring-green-500 transition-colors duration-300';
-      if (boardStatus === 'error') return 'bg-red-100 ring-4 ring-red-500 transition-colors duration-300';
-      return 'bg-white transition-colors duration-300';
+      if (gameOver) return 'opacity-50 pointer-events-none grayscale';
+      if (boardStatus === 'success') return 'bg-green-50/50 ring-4 ring-green-500';
+      if (boardStatus === 'error') return 'bg-red-50/50 ring-4 ring-accent-pop';
+      return '';
   };
 
   const getHighlightedSegment = (digitIdx: number) => {
@@ -309,7 +309,7 @@ const Game: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center p-8 bg-gray-50 min-h-screen relative">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-bg-main p-4 font-body text-fg-primary">
       <Toast message={message} type={messageType} />
 
       {isTutorialActive && (
@@ -323,48 +323,82 @@ const Game: React.FC = () => {
 
       {gameOver && <GameOverModal score={score} roundsWon={round - 1} onRestart={initGame} isNewHighScore={isNewHighScore} />}
 
-      <h1 className="text-4xl font-bold mb-4 text-gray-800">Math Sticks</h1>
-
-      {/* High Score Display */}
-      <div className="text-sm font-semibold text-gray-500 mb-2">
-         Best: {highScore.score} pts ({highScore.rounds} rounds)
-      </div>
-
-      {/* Stats Bar */}
-      <div className="flex gap-8 mb-6 text-xl bg-white p-4 rounded-lg shadow-sm">
-        <div><span className="font-semibold">Score:</span> {score}</div>
-        <div><span className="font-semibold">Round:</span> {round}</div>
-        <div className={`${timeLeft < 10 ? 'text-red-600 font-bold' : ''}`}>
-             <span className="font-semibold">Time:</span> {timeLeft}s
+      <div className="w-full max-w-lg">
+        {/* Header / Brand */}
+        <div className="flex justify-between items-end mb-4">
+          <h1 className="text-4xl font-display uppercase tracking-tighter text-fg-primary leading-none">
+            Math<br/>Sticks
+          </h1>
+          <div className="text-right">
+             <div className="text-xs font-bold uppercase tracking-widest text-fg-secondary">High Score</div>
+             <div className="font-display text-xl leading-none">{highScore.score} PTS</div>
+          </div>
         </div>
-      </div>
 
-      <div className="mb-4 text-lg">
-        <span className="font-semibold">Start Number:</span> {targetNumber}
-      </div>
+        {/* Game Container */}
+        <div className="bg-surface-paper border-thick rounded-md shadow-card p-6 relative">
 
-      <div className="mb-8 text-lg">
-        <span className="font-semibold">Sticks in Hand:</span> {hand}
-      </div>
+          {/* LCD Stats Screen */}
+          <div className="bg-surface-screen border-thick rounded-sm mb-6 p-4 relative overflow-hidden shadow-inner">
+             <div className="lcd-scanlines absolute inset-0 pointer-events-none z-10"></div>
+             <div className="flex justify-between items-end relative z-0 font-display text-fg-primary">
+                <div className="flex flex-col">
+                   <span className="text-xs font-body opacity-60 uppercase">Score</span>
+                   <span className="text-3xl leading-none">{score.toString().padStart(4, '0')}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                   <span className="text-xs font-body opacity-60 uppercase">Round</span>
+                   <span className="text-3xl leading-none">{round.toString().padStart(2, '0')}</span>
+                </div>
+                <div className={`flex flex-col items-end ${timeLeft < 10 ? 'animate-pulse text-red-900' : ''}`}>
+                   <span className="text-xs font-body opacity-60 uppercase">Time</span>
+                   <span className="text-3xl leading-none">{timeLeft.toString().padStart(2, '0')}s</span>
+                </div>
+             </div>
+          </div>
 
-      {/* Board */}
-      <div className={`flex justify-center mb-8 gap-4 p-6 rounded-xl shadow-lg transition-all ${getBoardClass()}`}>
-        {currentSegments.map((segs, idx) => (
-          <Digit
-            key={idx}
-            segments={segs}
-            onClick={(sIdx) => handleSegmentClick(idx, sIdx)}
-            disabled={gameOver || isProcessing}
-            highlightedSegment={getHighlightedSegment(idx)}
-          />
-        ))}
-      </div>
+          {/* Sub-Info Bar */}
+          <div className="flex justify-between items-center mb-6 px-2 font-bold text-sm uppercase">
+            <div className="flex items-center gap-2">
+               <span className="text-fg-secondary">Start:</span>
+               <span className="font-display text-xl">{targetNumber.toString().padStart(3, '0')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+               <span className="text-fg-secondary">Hand:</span>
+               <div className="flex gap-1">
+                 {Array.from({ length: Math.max(hand, 0) }).map((_, i) => (
+                    <div key={i} className="w-1 h-4 bg-fg-primary transform -rotate-12 shadow-sm"></div>
+                 ))}
+                 {hand === 0 && <span className="text-fg-secondary/50">-</span>}
+               </div>
+            </div>
+          </div>
+
+          {/* Board Area */}
+          <div className={`bg-graph-paper border-2 border-fg-primary/10 rounded p-6 mb-8 flex justify-center gap-2 sm:gap-4 transition-all duration-300 relative ${getBoardClass()}`}>
+             {/* Board Status Indicator (LED) */}
+             <div className={`absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-black/20 ${
+                boardStatus === 'neutral' ? 'bg-gray-400' :
+                boardStatus === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' :
+                'bg-accent-pop shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+             }`}></div>
+
+            {currentSegments.map((segs, idx) => (
+              <Digit
+                key={idx}
+                segments={segs}
+                onClick={(sIdx) => handleSegmentClick(idx, sIdx)}
+                disabled={gameOver || isProcessing}
+                highlightedSegment={getHighlightedSegment(idx)}
+              />
+            ))}
+          </div>
 
       {/* Controls */}
-      <div className="flex gap-4 mb-8">
+      <div className="flex gap-4 mb-2">
             <button
-            className={`px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              isTutorialActive && tutorialStep === 3 ? 'ring-4 ring-yellow-400 animate-pulse' : ''
+            className={`flex-1 py-4 text-xl btn-retro btn-retro-action ${
+              isTutorialActive && tutorialStep === 3 ? 'ring-4 ring-bg-main animate-pulse' : ''
             }`}
             onClick={submitRound}
             disabled={hand > 0 || gameOver || isProcessing}
@@ -372,7 +406,7 @@ const Game: React.FC = () => {
             Submit
             </button>
             <button
-            className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-4 text-xl btn-retro btn-retro-pop"
             onClick={resetConfig}
             disabled={gameOver || isProcessing || isTutorialActive}
             >
@@ -380,22 +414,27 @@ const Game: React.FC = () => {
             </button>
       </div>
 
-      <div className={`mt-4 text-sm ${currentMoveCount > 3 ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
-        Moves used: {Math.floor(currentMoveCount)} / 3
-        {currentMoveCount > 3 && <span className="ml-2">(Reset needed)</span>}
+      <div className={`text-center font-bold text-sm uppercase tracking-widest ${currentMoveCount > 3 ? 'text-accent-pop animate-pulse' : 'text-fg-secondary'}`}>
+        Moves: {Math.floor(currentMoveCount)} / 3
+        {currentMoveCount > 3 && <span className="ml-2 block text-xs">(Reset Required)</span>}
       </div>
 
+     </div> {/* End Game Container */}
+
       {/* History */}
-      <div className="mt-8 w-full max-w-md">
-          <h3 className="text-lg font-bold mb-2">History (Seen Numbers)</h3>
-           <div className="max-h-40 overflow-y-auto border p-2 bg-white rounded">
+      <div className="mt-8 w-full">
+          <h3 className="text-sm font-bold uppercase tracking-widest mb-2 text-fg-secondary">History Log</h3>
+           <div className="max-h-32 overflow-y-auto border-thick bg-white p-2 font-display text-lg leading-none shadow-sm flex flex-wrap gap-2">
+            {history.length === 0 && <span className="text-fg-secondary/50 text-sm font-body">No numbers found yet...</span>}
             {history.slice().reverse().map((h, i) => (
-                <span key={i} className="inline-block bg-gray-200 rounded px-2 py-1 m-1 text-sm font-mono">
+                <span key={i} className="px-2 py-1 bg-gray-100 border border-gray-300">
                     {h.toString().padStart(3, '0')}
                 </span>
             ))}
            </div>
       </div>
+
+      </div> {/* End Wrapper */}
     </div>
   );
 };
