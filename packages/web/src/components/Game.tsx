@@ -169,7 +169,7 @@ const Game: React.FC = () => {
     // Check moves
     const moves = calculateMoves(startSegments, currentSegments);
     if (moves > 3) {
-      setMessage(`Too many moves! Used ${moves}, max 3.`);
+      setMessage(`Too many moves! Used ${moves}/3. Reset to try again.`);
       setMessageType('error');
       setBoardStatus('error');
       setTimeout(() => {
@@ -320,8 +320,9 @@ const Game: React.FC = () => {
             </button>
       </div>
 
-      <div className="mt-4 text-sm text-gray-500">
+      <div className={`mt-4 text-sm ${currentMoveCount > 3 ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
         Moves used: {currentMoveCount} / 3
+        {currentMoveCount > 3 && <span className="ml-2">(Reset needed)</span>}
       </div>
 
       {/* History */}

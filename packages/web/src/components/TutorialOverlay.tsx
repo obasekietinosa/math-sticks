@@ -45,8 +45,8 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step, onStart,
             <ul className="list-disc list-inside space-y-1">
               <li>You have <strong>45 seconds</strong> per round.</li>
               <li>Find a <strong>unique number</strong> each round.</li>
-              <li>Moves cost points! Try to use fewer moves.</li>
-              <li>You must use <strong>all sticks</strong> in your hand.</li>
+              <li><strong>Max 3 moves</strong> per round.</li>
+              <li><strong>Reset</strong> if you make too many moves.</li>
             </ul>
           </div>
           <button
