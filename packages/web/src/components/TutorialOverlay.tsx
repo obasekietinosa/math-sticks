@@ -10,26 +10,30 @@ interface TutorialOverlayProps {
 export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step, onStart, onSkip, onFinish }) => {
   if (step === 0) {
     return (
-      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fade-in">
-        <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full">
-          <h2 className="text-3xl font-bold text-blue-600 mb-4">Welcome to Math Sticks!</h2>
-          <p className="text-gray-600 mb-8">
-            Learn how to discover new numbers by moving matchsticks.
-          </p>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={onStart}
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold transition-colors text-lg"
-            >
-              Start Tutorial
-            </button>
-            <button
-              onClick={onSkip}
-              className="text-gray-500 hover:text-gray-700 font-semibold transition-colors"
-            >
-              Skip
-            </button>
-          </div>
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in backdrop-blur-sm">
+        <div className="bg-surface-paper border-thick rounded-md shadow-card max-w-sm w-full relative overflow-hidden">
+            <div className="bg-fg-primary text-bg-main p-4">
+                <h2 className="text-xl font-display uppercase tracking-widest">Training Mode</h2>
+            </div>
+            <div className="p-8 bg-graph-paper text-center">
+              <p className="text-fg-secondary font-bold mb-8 uppercase tracking-wide leading-relaxed">
+                Learn the logic of the segments. Discover numbers by moving sticks.
+              </p>
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={onStart}
+                  className="w-full py-4 text-xl btn-retro btn-retro-action"
+                >
+                  Initialize Training
+                </button>
+                <button
+                  onClick={onSkip}
+                  className="w-full py-2 text-sm uppercase font-bold text-fg-secondary hover:text-fg-primary underline decoration-2 underline-offset-4"
+                >
+                  Skip Protocol
+                </button>
+              </div>
+            </div>
         </div>
       </div>
     );
@@ -37,24 +41,28 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step, onStart,
 
   if (step === 4) {
     return (
-      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fade-in">
-        <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-md w-full">
-          <h2 className="text-3xl font-bold text-green-600 mb-4">Tutorial Complete!</h2>
-          <div className="text-left bg-gray-50 p-4 rounded-lg mb-6 text-sm text-gray-700 space-y-2">
-            <p className="font-semibold">Game Rules:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>You have <strong>45 seconds</strong> per round.</li>
-              <li>Find a <strong>unique number</strong> each round.</li>
-              <li><strong>Max 3 moves</strong> per round.</li>
-              <li><strong>Reset</strong> if you make too many moves.</li>
-            </ul>
-          </div>
-          <button
-            onClick={onFinish}
-            className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition-colors text-lg"
-          >
-            Start Game
-          </button>
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in backdrop-blur-sm">
+        <div className="bg-surface-paper border-thick rounded-md shadow-card max-w-md w-full relative overflow-hidden">
+            <div className="bg-accent-action text-white p-4">
+                <h2 className="text-xl font-display uppercase tracking-widest">Training Complete</h2>
+            </div>
+            <div className="p-8 bg-graph-paper">
+              <div className="text-left bg-white border-2 border-fg-secondary/20 p-4 rounded-sm mb-8 text-sm text-fg-primary space-y-2 font-mono shadow-sm">
+                <p className="font-bold uppercase tracking-widest mb-2 border-b-2 border-fg-secondary/10 pb-1">Directives:</p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>Time Limit: <strong>45 Seconds</strong></li>
+                  <li>Target: <strong>Unique Number</strong></li>
+                  <li>Constraint: <strong>Max 3 Moves</strong></li>
+                  <li>Error Recovery: <strong>Reset System</strong></li>
+                </ul>
+              </div>
+              <button
+                onClick={onFinish}
+                className="w-full py-4 text-xl btn-retro btn-retro-action"
+              >
+                Start Mission
+              </button>
+            </div>
         </div>
       </div>
     );
@@ -62,13 +70,16 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step, onStart,
 
   // Steps 1, 2, 3: Interactive Banners
   let instruction = "";
-  if (step === 1) instruction = "Click the highlighted stick to pick it up.";
-  if (step === 2) instruction = "Click the highlighted empty spot to place the stick.";
-  if (step === 3) instruction = "Click Submit to check your answer.";
+  if (step === 1) instruction = "Pick up the highlighted stick.";
+  if (step === 2) instruction = "Place it in the empty spot.";
+  if (step === 3) instruction = "Submit to verify sequence.";
 
   return (
-    <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-8 py-4 rounded-full shadow-xl z-40 animate-bounce-slight text-lg font-bold pointer-events-none text-center w-11/12 max-w-md">
-      {instruction}
+    <div className="fixed top-24 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md z-40 animate-bounce-slight pointer-events-none">
+        <div className="bg-fg-primary text-bg-main border-thick shadow-key p-4 text-center">
+            <span className="font-display text-xl uppercase tracking-widest block mb-1">Step {step}/3</span>
+            <span className="font-bold uppercase text-sm">{instruction}</span>
+        </div>
     </div>
   );
 };
