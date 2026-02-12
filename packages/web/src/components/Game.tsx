@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Digit from './Digit';
 import { Toast } from './Toast';
 import { GameOverModal } from './GameOverModal';
+import { TutorialOverlay } from './TutorialOverlay';
 import {
   generateRandomNumber,
   getSegments,
@@ -18,6 +19,9 @@ const Game: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState<number>(ROUND_TIME);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [history, setHistory] = useState<number[]>([]);
+  const [tutorialStep, setTutorialStep] = useState<number>(() => {
+    return localStorage.getItem('math-sticks-tutorial-v2-seen') ? -1 : 0;
+  });
 
   // Board State
   const [targetNumber, setTargetNumber] = useState<number>(0);
@@ -40,7 +44,12 @@ const Game: React.FC = () => {
   };
 
   const initGame = () => {
-    const num = generateRandomNumber();
+    let num;
+    if (tutorialStep >= 0) {
+      num = 6; // Fixed start for tutorial
+    } else {
+      num = generateRandomNumber();
+    }
     setScore(0);
     setRound(1);
     setGameOver(false);
@@ -53,13 +62,14 @@ const Game: React.FC = () => {
 
   useEffect(() => {
     initGame();
-  }, []);
+  }, [tutorialStep === 0, tutorialStep === -1]); // Re-run init if tutorial starts or ends
 
   // Timer
   const isProcessing = boardStatus !== 'neutral';
+  const isTutorialActive = tutorialStep >= 0;
 
   useEffect(() => {
-    if (gameOver || isProcessing) return;
+    if (gameOver || isProcessing || isTutorialActive) return;
 
     if (timeLeft <= 0) {
       setGameOver(true);
@@ -71,10 +81,31 @@ const Game: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, gameOver, isProcessing]);
+  }, [timeLeft, gameOver, isProcessing, isTutorialActive]);
 
   const handleSegmentClick = (digitIndex: number, segmentIndex: number) => {
     if (gameOver || isProcessing) return;
+
+    // Tutorial Constraints
+    if (isTutorialActive) {
+      if (tutorialStep === 1) {
+        // Must click Digit 2, Segment 4 (E)
+        if (digitIndex === 2 && segmentIndex === 4) {
+          // Allow logic to proceed
+        } else {
+          return; // Block
+        }
+      } else if (tutorialStep === 2) {
+         // Must click Digit 2, Segment 1 (B)
+         if (digitIndex === 2 && segmentIndex === 1) {
+           // Allow logic to proceed
+         } else {
+           return; // Block
+         }
+      } else {
+        return; // Block other steps (0, 3, 4)
+      }
+    }
 
     const isActive = currentSegments[digitIndex][segmentIndex];
     const newSegments = currentSegments.map(d => [...d]);
@@ -84,12 +115,18 @@ const Game: React.FC = () => {
       newSegments[digitIndex][segmentIndex] = false;
       setHand(h => h + 1);
       setCurrentSegments(newSegments);
+      if (isTutorialActive && tutorialStep === 1) {
+        setTutorialStep(2);
+      }
     } else {
       // Add stick -> remove from hand
       if (hand > 0) {
         newSegments[digitIndex][segmentIndex] = true;
         setHand(h => h - 1);
         setCurrentSegments(newSegments);
+        if (isTutorialActive && tutorialStep === 2) {
+            setTutorialStep(3);
+        }
       } else {
         setMessage("No sticks in hand!");
         setMessageType('error');
@@ -100,6 +137,11 @@ const Game: React.FC = () => {
 
   const submitRound = () => {
     if (gameOver || isProcessing) return;
+
+    // Tutorial Constraint
+    if (isTutorialActive) {
+        if (tutorialStep !== 3) return;
+    }
 
     if (hand !== 0) {
       setMessage("You must use all sticks!");
@@ -127,7 +169,7 @@ const Game: React.FC = () => {
     // Check moves
     const moves = calculateMoves(startSegments, currentSegments);
     if (moves > 3) {
-      setMessage(`Too many moves! Used ${moves}, max 3.`);
+      setMessage(`Too many moves! Used ${moves}/3. Reset to try again.`);
       setMessageType('error');
       setBoardStatus('error');
       setTimeout(() => {
@@ -154,6 +196,12 @@ const Game: React.FC = () => {
     setMessageType('success');
     setBoardStatus('success');
 
+    if (isTutorialActive) {
+         setTutorialStep(4);
+         setBoardStatus('success'); // Keep success status until they click Finish
+         return;
+    }
+
     setTimeout(() => {
         const newScore = score + num;
         setScore(newScore);
@@ -167,11 +215,22 @@ const Game: React.FC = () => {
 
   const resetConfig = () => {
       if (gameOver || isProcessing) return;
+      if (isTutorialActive) return; // Disable reset in tutorial
       setCurrentSegments(startSegments.map(d => [...d]));
       setHand(0);
       setMessage("Reset to current start number.");
       setMessageType('info');
       setTimeout(() => setMessage(''), 2000);
+  };
+
+  const finishTutorial = () => {
+      setTutorialStep(-1);
+      localStorage.setItem('math-sticks-tutorial-v2-seen', 'true');
+  };
+
+  const skipTutorial = () => {
+      setTutorialStep(-1);
+      localStorage.setItem('math-sticks-tutorial-v2-seen', 'true');
   };
 
   const currentMoveCount = calculateMoves(startSegments, currentSegments);
@@ -183,9 +242,30 @@ const Game: React.FC = () => {
       return 'bg-white transition-colors duration-300';
   };
 
+  const getHighlightedSegment = (digitIdx: number) => {
+    if (!isTutorialActive) return null;
+    // Tutorial sequence: 6 -> 9
+    // 6 is at index 2 (last digit of 006)
+    if (digitIdx !== 2) return null;
+
+    if (tutorialStep === 1) return 4; // Pick E (bottom-left)
+    if (tutorialStep === 2) return 1; // Place B (top-right)
+    return null;
+  };
+
   return (
     <div className="flex flex-col items-center p-8 bg-gray-50 min-h-screen relative">
       <Toast message={message} type={messageType} />
+
+      {isTutorialActive && (
+        <TutorialOverlay
+          step={tutorialStep}
+          onStart={() => setTutorialStep(1)}
+          onSkip={skipTutorial}
+          onFinish={finishTutorial}
+        />
+      )}
+
       {gameOver && <GameOverModal score={score} roundsWon={round - 1} onRestart={initGame} />}
 
       <h1 className="text-4xl font-bold mb-4 text-gray-800">Math Sticks</h1>
@@ -215,6 +295,7 @@ const Game: React.FC = () => {
             segments={segs}
             onClick={(sIdx) => handleSegmentClick(idx, sIdx)}
             disabled={gameOver || isProcessing}
+            highlightedSegment={getHighlightedSegment(idx)}
           />
         ))}
       </div>
@@ -222,7 +303,9 @@ const Game: React.FC = () => {
       {/* Controls */}
       <div className="flex gap-4 mb-8">
             <button
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              isTutorialActive && tutorialStep === 3 ? 'ring-4 ring-yellow-400 animate-pulse' : ''
+            }`}
             onClick={submitRound}
             disabled={hand > 0 || gameOver || isProcessing}
             >
@@ -231,14 +314,15 @@ const Game: React.FC = () => {
             <button
             className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={resetConfig}
-            disabled={gameOver || isProcessing}
+            disabled={gameOver || isProcessing || isTutorialActive}
             >
             Reset
             </button>
       </div>
 
-      <div className="mt-4 text-sm text-gray-500">
+      <div className={`mt-4 text-sm ${currentMoveCount > 3 ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
         Moves used: {currentMoveCount} / 3
+        {currentMoveCount > 3 && <span className="ml-2">(Reset needed)</span>}
       </div>
 
       {/* History */}

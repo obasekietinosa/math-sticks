@@ -4,16 +4,22 @@ interface DigitProps {
   segments: boolean[];
   onClick: (index: number) => void;
   disabled?: boolean;
+  highlightedSegment?: number | null;
 }
 
-const Digit: React.FC<DigitProps> = ({ segments, onClick, disabled }) => {
+const Digit: React.FC<DigitProps> = ({ segments, onClick, disabled, highlightedSegment }) => {
   // Segments: 0:a, 1:b, 2:c, 3:d, 4:e, 5:f, 6:g
 
-  const getSegmentClass = (active: boolean) => {
+  const getSegmentClass = (active: boolean, isHighlighted: boolean) => {
     const base = "absolute transition-colors duration-200 cursor-pointer rounded-sm";
-    const color = active
+    let color = active
       ? "bg-orange-500 hover:bg-orange-400"
       : "bg-gray-200 hover:bg-gray-300";
+
+    if (isHighlighted) {
+      color += " ring-4 ring-yellow-400 animate-pulse z-10";
+    }
+
     return `${base} ${color}`;
   };
 
@@ -37,7 +43,7 @@ const Digit: React.FC<DigitProps> = ({ segments, onClick, disabled }) => {
       {positions.map((pos, idx) => (
         <div
           key={idx}
-          className={`${getSegmentClass(segments[idx])} ${pos.class}`}
+          className={`${getSegmentClass(segments[idx], idx === highlightedSegment)} ${pos.class}`}
           style={getSizeStyle(pos.vertical)}
           onClick={() => !disabled && onClick(idx)}
           data-testid={`segment-${idx}-${segments[idx] ? 'on' : 'off'}`}
