@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Digit from './Digit';
 import { Toast } from './Toast';
 import { GameOverModal } from './GameOverModal';
+import { TutorialModal } from './TutorialModal';
 import {
   generateRandomNumber,
   getSegments,
@@ -18,6 +19,9 @@ const Game: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState<number>(ROUND_TIME);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [history, setHistory] = useState<number[]>([]);
+  const [showTutorial, setShowTutorial] = useState<boolean>(() => {
+    return !localStorage.getItem('math-sticks-tutorial-seen');
+  });
 
   // Board State
   const [targetNumber, setTargetNumber] = useState<number>(0);
@@ -59,7 +63,7 @@ const Game: React.FC = () => {
   const isProcessing = boardStatus !== 'neutral';
 
   useEffect(() => {
-    if (gameOver || isProcessing) return;
+    if (gameOver || isProcessing || showTutorial) return;
 
     if (timeLeft <= 0) {
       setGameOver(true);
@@ -71,7 +75,7 @@ const Game: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, gameOver, isProcessing]);
+  }, [timeLeft, gameOver, isProcessing, showTutorial]);
 
   const handleSegmentClick = (digitIndex: number, segmentIndex: number) => {
     if (gameOver || isProcessing) return;
@@ -186,6 +190,14 @@ const Game: React.FC = () => {
   return (
     <div className="flex flex-col items-center p-8 bg-gray-50 min-h-screen relative">
       <Toast message={message} type={messageType} />
+      {showTutorial && (
+        <TutorialModal
+          onClose={() => {
+            setShowTutorial(false);
+            localStorage.setItem('math-sticks-tutorial-seen', 'true');
+          }}
+        />
+      )}
       {gameOver && <GameOverModal score={score} roundsWon={round - 1} onRestart={initGame} />}
 
       <h1 className="text-4xl font-bold mb-4 text-gray-800">Math Sticks</h1>
