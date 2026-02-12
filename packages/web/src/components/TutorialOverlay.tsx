@@ -67,7 +67,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step, onStart,
   if (step === 3) instruction = "Click Submit to check your answer.";
 
   return (
-    <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-8 py-4 rounded-full shadow-xl z-40 animate-bounce-slight text-lg font-bold pointer-events-none whitespace-nowrap">
+    <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-8 py-4 rounded-full shadow-xl z-40 animate-bounce-slight text-lg font-bold pointer-events-none text-center w-11/12 max-w-md">
       {instruction}
     </div>
   );
