@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Digit from './Digit';
 import { Toast } from './Toast';
 import { GameOverModal } from './GameOverModal';
@@ -12,6 +12,11 @@ import {
 
 const ROUND_TIME = 45;
 
+interface HighScore {
+  score: number;
+  rounds: number;
+}
+
 const Game: React.FC = () => {
   // Game State
   const [score, setScore] = useState<number>(0);
@@ -22,6 +27,18 @@ const Game: React.FC = () => {
   const [tutorialStep, setTutorialStep] = useState<number>(() => {
     return localStorage.getItem('math-sticks-tutorial-v2-seen') ? -1 : 0;
   });
+
+  const [highScore, setHighScore] = useState<HighScore>(() => {
+    try {
+      const stored = localStorage.getItem('math-sticks-highscore');
+      return stored ? JSON.parse(stored) : { score: 0, rounds: 0 };
+    } catch {
+      return { score: 0, rounds: 0 };
+    }
+  });
+  const [isNewHighScore, setIsNewHighScore] = useState<boolean>(false);
+
+  const hasProcessedGameOver = useRef(false);
 
   // Board State
   const [targetNumber, setTargetNumber] = useState<number>(0);
@@ -53,6 +70,8 @@ const Game: React.FC = () => {
     setScore(0);
     setRound(1);
     setGameOver(false);
+    setIsNewHighScore(false);
+    hasProcessedGameOver.current = false;
     setHistory([num]); // Add initial number to history
     setMessage(`Start number: ${num}. Good luck!`);
     setMessageType('info');
@@ -82,6 +101,27 @@ const Game: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [timeLeft, gameOver, isProcessing, isTutorialActive]);
+
+  useEffect(() => {
+    if (gameOver && !hasProcessedGameOver.current) {
+      hasProcessedGameOver.current = true;
+
+      const finalScore = score;
+      const finalRounds = round - 1;
+
+      // Update Logic: Standard "Best Score" approach + Tie-breaker on rounds
+      const isNewBest = finalScore > highScore.score || (finalScore === highScore.score && finalRounds > highScore.rounds);
+
+      if (isNewBest) {
+          const newRecord = { score: finalScore, rounds: finalRounds };
+          localStorage.setItem('math-sticks-highscore', JSON.stringify(newRecord));
+          setHighScore(newRecord);
+          setIsNewHighScore(true);
+      } else {
+          setIsNewHighScore(false);
+      }
+    }
+  }, [gameOver, score, round, highScore]);
 
   const handleSegmentClick = (digitIndex: number, segmentIndex: number) => {
     if (gameOver || isProcessing) return;
@@ -281,9 +321,14 @@ const Game: React.FC = () => {
         />
       )}
 
-      {gameOver && <GameOverModal score={score} roundsWon={round - 1} onRestart={initGame} />}
+      {gameOver && <GameOverModal score={score} roundsWon={round - 1} onRestart={initGame} isNewHighScore={isNewHighScore} />}
 
       <h1 className="text-4xl font-bold mb-4 text-gray-800">Math Sticks</h1>
+
+      {/* High Score Display */}
+      <div className="text-sm font-semibold text-gray-500 mb-2">
+         Best: {highScore.score} pts ({highScore.rounds} rounds)
+      </div>
 
       {/* Stats Bar */}
       <div className="flex gap-8 mb-6 text-xl bg-white p-4 rounded-lg shadow-sm">
